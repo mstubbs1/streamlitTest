@@ -196,6 +196,51 @@ else:
     st.info("Select 2–4 plans above to see a side-by-side comparison.")
 
 # -------------------------------------------------
+# Medical Groups
+# -------------------------------------------------
+st.divider()
+st.subheader("Medical Groups")
+
+@st.cache_data
+def load_medical_groups():
+    path = Path(__file__).parent / "2026_San_Diego_Medicare_Plans_CLEANED.xlsx"
+    return pd.read_excel(path, sheet_name="Medical Groups")
+
+try:
+    mg = load_medical_groups()
+    for col in mg.columns:
+        mg[col] = mg[col].fillna("").astype(str)
+
+    mg_carriers = sorted([c for c in mg["Carrier"].unique() if c.strip()])
+    selected_mg_carriers = st.multiselect(
+        "Filter Medical Groups by Carrier",
+        mg_carriers,
+        default=[],
+        key="mg_carriers",
+    )
+
+    mg_search = st.text_input("Search medical group name", key="mg_search")
+
+    mg_filtered = mg.copy()
+    if selected_mg_carriers:
+        mg_filtered = mg_filtered[mg_filtered["Carrier"].isin(selected_mg_carriers)]
+    if mg_search.strip():
+        q = mg_search.strip().lower()
+        mg_filtered = mg_filtered[
+            mg_filtered["Medical Group"].str.lower().str.contains(q, na=False)
+        ]
+
+    st.caption(f"{len(mg_filtered)} rows")
+    st.dataframe(
+        mg_filtered,
+        use_container_width=True,
+        hide_index=True,
+        height=400,
+    )
+except Exception as e:
+    st.warning(f"Medical Groups sheet could not be loaded: {e}")
+
+# -------------------------------------------------
 # Footer
 # -------------------------------------------------
 st.divider()
